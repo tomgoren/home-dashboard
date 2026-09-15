@@ -26,8 +26,11 @@ from app.ui import current as ui_current
 from app.ui import forecast as ui_forecast
 from app.ui import scrim as ui_scrim
 from app.ui import typography as ty
+from app.weather import cache as weather_cache
 from app.weather.fake import fake_snapshot
 from app.weather.model import WeatherSnapshot
+from app.weather.open_meteo import OpenMeteoProvider
+from app.weather.refresher import BackgroundRefresher
 
 
 class App:
@@ -37,15 +40,26 @@ class App:
         self.display = init_display(config.display)
         self.scene = Scene(self.display.logical_size)
         self.clock = pygame.time.Clock()
-        self.snapshot: WeatherSnapshot = fake_snapshot()
         self.debug = config.debug.enabled
         self.running = True
         self._last_condition = None
 
-    def refresh_weather(self) -> None:
-        # Phase 1: fake data only. A real WeatherProvider plugs in here
-        # without anything else in this class changing.
-        self.snapshot = fake_snapshot()
+        bootstrap = weather_cache.load(config.cache_path)
+        if bootstrap is None:
+            bootstrap = fake_snapshot()
+            bootstrap.stale = True
+
+        self.refresher = BackgroundRefresher(
+            provider=OpenMeteoProvider(config.location),
+            cache_path=config.cache_path,
+            interval_seconds=config.weather.refresh_interval_seconds,
+            initial_snapshot=bootstrap,
+        )
+        self.refresher.start()
+
+    @property
+    def snapshot(self) -> WeatherSnapshot:
+        return self.refresher.snapshot
 
     def process_events(self) -> None:
         for event in pygame.event.get():
@@ -55,7 +69,7 @@ class App:
                 if event.key in (pygame.K_q, pygame.K_ESCAPE):
                     self.running = False
                 elif event.key == pygame.K_r:
-                    self.refresh_weather()
+                    self.refresher.force_refresh()
                 elif event.key == pygame.K_d:
                     self.debug = not self.debug
 
@@ -65,10 +79,10 @@ class App:
         surf = ty.render(font, text, palette.TEXT_DIM)
         self.display.canvas.blit(surf, (8, self.display.logical_size[1] - surf.get_height() - 6))
 
-    def draw_stale_indicator(self, now: datetime) -> None:
-        if not self.snapshot.stale:
+    def draw_stale_indicator(self, snapshot: WeatherSnapshot, now: datetime) -> None:
+        if not snapshot.stale:
             return
-        age_min = round((now - self.snapshot.fetched_at).total_seconds() / 60)
+        age_min = round((now - snapshot.fetched_at).total_seconds() / 60)
         font = ty.body_font(14)
         surf = ty.render(font, f"OFFLINE · DATA {age_min}m OLD", palette.TEXT_DIM)
         target = self.display.canvas
@@ -79,33 +93,35 @@ class App:
         while self.running:
             dt = self.clock.tick(fps) / 1000.0
             now = datetime.now()
+            snapshot = self.snapshot  # one consistent read for the whole frame
 
             self.process_events()
 
-            if self.snapshot.current.condition != self._last_condition:
-                self.scene.configure(self.snapshot, now)
-                self._last_condition = self.snapshot.current.condition
+            if snapshot.current.condition != self._last_condition:
+                self.scene.configure(snapshot, now)
+                self._last_condition = snapshot.current.condition
             else:
                 # keep sky/celestial time-driven state fresh even when the
                 # condition hasn't changed
-                self.scene.sky.configure(now, self.snapshot.astronomy, self.snapshot.current.condition)
-                self.scene.celestial.configure(now, self.snapshot.astronomy, self.snapshot.current.condition.cloud_coverage)
+                self.scene.sky.configure(now, snapshot.astronomy, snapshot.current.condition)
+                self.scene.celestial.configure(now, snapshot.astronomy, snapshot.current.condition.cloud_coverage)
 
             self.scene.update(dt)
 
             canvas = self.display.canvas
             self.scene.draw(canvas)
             ui_scrim.draw(canvas)
-            ui_current.draw_header(canvas, self.snapshot, now)
-            anchor = ui_current.draw_primary(canvas, self.snapshot, self.config)
-            ui_current.draw_secondary(canvas, self.snapshot, self.config, anchor)
-            ui_forecast.draw(canvas, self.snapshot, self.config)
-            self.draw_stale_indicator(now)
+            ui_current.draw_header(canvas, snapshot, now)
+            anchor = ui_current.draw_primary(canvas, snapshot, self.config)
+            ui_current.draw_secondary(canvas, snapshot, self.config, anchor)
+            ui_forecast.draw(canvas, snapshot, self.config)
+            self.draw_stale_indicator(snapshot, now)
             if self.debug:
                 self.draw_debug()
 
             self.display.present()
 
+        self.refresher.stop()
         pygame.quit()
 
 

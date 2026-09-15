@@ -63,7 +63,10 @@ app/
     model.py           # Condition enum + intensity tiers, CurrentConditions,
                         # ForecastDay, Astronomy, WeatherSnapshot
     provider.py         # WeatherProvider protocol
-    fake.py             # fake data for the Phase 1/2 mockup
+    open_meteo.py        # real provider: WMO code normalization, no API key
+    cache.py              # persist/load last good snapshot to disk
+    refresher.py           # background-thread polling; render loop never blocks
+    fake.py             # fake data, used only when no cache exists yet
 
   display/
     backend.py          # SDL init: window / kmsdrm / fbdev / auto-detect.
@@ -98,12 +101,24 @@ nothing in `scene/` or `ui/`.
 
 ## Status
 
-**Phase 1–2 (this commit):** static/animated mockup on fake data, scaled
-logical-resolution rendering, day/night sky interpolation, cloud parallax,
-rain/snow/fog, sun/moon/stars, 5-day forecast, unit-aware formatting. Not
-yet done: Open-Meteo integration (Phase 3), wind-shaped rain angle is
-wired but untested against real wind data, thunderstorm flash timing needs
-tuning, systemd deploy is a template only.
+**Phase 1–2:** animated mockup, scaled logical-resolution rendering,
+day/night sky interpolation, cloud parallax, rain/snow/fog, sun/moon/stars,
+5-day forecast, unit-aware formatting.
+
+**Phase 3:** real data via [Open-Meteo](https://open-meteo.com/) (no API
+key). `app/weather/open_meteo.py` normalizes WMO weather codes into
+`Condition`; approximate moon phase is computed locally (no ephemeris
+needed). `app/weather/refresher.py` runs fetches on a background thread —
+the render loop only ever reads the latest snapshot, never blocks on the
+network. `app/weather/cache.py` persists the last good snapshot to disk
+(`weather.cache_path` in config) so a boot with no network still shows real
+recent data instead of an empty/fake screen; a failed refresh keeps
+showing the last good data with the unobtrusive "OFFLINE · DATA Nm OLD"
+indicator rather than an error screen.
+
+Not yet done: wind-shaped rain angle is wired but untested against a wide
+range of real wind data, thunderstorm flash timing needs tuning, moon-phase
+shading on the disc itself, systemd deploy is a template only (Phase 6).
 
 ## Running it
 
