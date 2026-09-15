@@ -1,0 +1,29 @@
+# Copy this file to config.toml and edit as needed.
+
+[location]
+latitude = 52.5200
+longitude = 13.4050
+name = "Berlin"
+
+[units]
+temperature = "celsius"   # "celsius" | "fahrenheit"
+wind_speed = "kmh"        # "kmh" | "ms" | "mph" | "kn"
+precipitation = "mm"      # "mm" | "inch"
+
+[display]
+# "auto" picks DRM/KMS on Linux with no desktop session, otherwise a window.
+# Force with "window", "kmsdrm", or "fbdev".
+backend = "auto"
+fullscreen = true
+# Logical design resolution the scene is composed at, then scaled to the
+# physical display. 800x480 matches a typical 7" panel.
+width = 800
+height = 480
+fps = 30
+
+[weather]
+refresh_interval_seconds = 600
+cache_path = "~/.cache/weathr-panel/last_weather.json"
+
+[debug]
+enabled = false
