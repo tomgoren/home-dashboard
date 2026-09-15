@@ -116,9 +116,15 @@ recent data instead of an empty/fake screen; a failed refresh keeps
 showing the last good data with the unobtrusive "OFFLINE · DATA Nm OLD"
 indicator rather than an error screen.
 
+**Phase 4–5:** rain splashes at the point each drop lands, a phase-shaded
+moon disc (terminator rendered per-scanline in closed form, cached by
+rounded phase — see `_build_moon_disc` in `app/scene/celestial.py`), and
+thunderstorm flashes on a randomized 4.5–11s interval (with an occasional
+quick double-flash) instead of a per-frame dice roll that read as a strobe.
+
 Not yet done: wind-shaped rain angle is wired but untested against a wide
-range of real wind data, thunderstorm flash timing needs tuning, moon-phase
-shading on the disc itself, systemd deploy is a template only (Phase 6).
+range of real wind data; systemd deploy is a template only, untested on
+real hardware (Phase 6 — DRM/KMS and fbdev both need a real Pi to verify).
 
 ## Running it
 

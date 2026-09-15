@@ -8,6 +8,7 @@ from __future__ import annotations
 import math
 import random
 from datetime import datetime
+from functools import lru_cache
 
 import pygame
 
@@ -15,6 +16,40 @@ from app import palette
 from app.weather.model import Astronomy
 
 _STAR_COUNT = 60
+_MOON_SHADOW = palette.lerp_color(palette.MOON, (8, 10, 20), 0.82)
+
+
+@lru_cache(maxsize=64)
+def _build_moon_disc(radius: int, phase_bucket: int) -> pygame.Surface:
+    """Phase-shaded moon disc, cached by radius + phase rounded to 1%.
+
+    Terminator is rendered per scanline in closed form (no per-pixel loop,
+    no astronomical simulation): illuminated width per row comes from
+    intersecting the disc with a cosine-squashed ellipse.
+    """
+    phase = phase_bucket / 100.0
+    size = radius * 2
+    surf = pygame.Surface((size, size), pygame.SRCALPHA)
+    pygame.draw.circle(surf, _MOON_SHADOW, (radius, radius), radius)
+
+    a = math.cos(phase * math.tau)
+    for dy in range(-radius, radius):
+        half_w = math.sqrt(max(0.0, radius * radius - dy * dy))
+        if half_w <= 0:
+            continue
+        ex = a * half_w
+        if phase <= 0.5:
+            lit_min, lit_max = ex, half_w
+        else:
+            lit_min, lit_max = -half_w, -ex
+        if lit_max <= lit_min:
+            continue
+        y = radius + dy
+        pygame.draw.line(
+            surf, palette.MOON,
+            (round(radius + lit_min), y), (round(radius + lit_max), y),
+        )
+    return surf
 
 
 class CelestialLayer:
@@ -82,9 +117,14 @@ class CelestialLayer:
             next_sunrise = astro.sunrise if now < astro.sunrise else astro.sunrise + timedelta(days=1)
             pos = self._arc_position(astro.sunset, next_sunrise, now)
             if pos:
-                self._draw_glow_disc(target, pos, palette.MOON, radius=18, glow=1.3, alpha_scale=self._visibility)
+                radius = 18
+                moon_disc = _build_moon_disc(radius, round(astro.moon_phase * 100) % 100)
+                self._draw_glow_disc(
+                    target, pos, palette.MOON, radius=radius, glow=1.3,
+                    alpha_scale=self._visibility, disc_surface=moon_disc,
+                )
 
-    def _draw_glow_disc(self, target, pos, color, radius, glow, alpha_scale=1.0):
+    def _draw_glow_disc(self, target, pos, color, radius, glow, alpha_scale=1.0, disc_surface=None):
         x, y = pos
         glow_r = round(radius * glow * 1.8)
         halo = pygame.Surface((glow_r * 2, glow_r * 2), pygame.SRCALPHA)
@@ -92,4 +132,7 @@ class CelestialLayer:
             a = round(30 * (1 - (r - radius) / max(1, glow_r - radius)) * alpha_scale)
             pygame.draw.circle(halo, (*color, a), (glow_r, glow_r), r)
         target.blit(halo, (x - glow_r, y - glow_r))
-        pygame.draw.circle(target, color, (round(x), round(y)), radius)
+        if disc_surface is not None:
+            target.blit(disc_surface, (round(x) - radius, round(y) - radius))
+        else:
+            pygame.draw.circle(target, color, (round(x), round(y)), radius)

@@ -14,6 +14,7 @@ from app.weather.model import Condition
 
 MAX_RAIN_DROPS = 140
 MAX_SNOW_FLAKES = 90
+SPLASH_LIFE = 0.16
 
 
 class PrecipitationLayer:
@@ -21,6 +22,7 @@ class PrecipitationLayer:
         self.size = size
         self._rain: list[list[float]] = []  # [x, y, length, speed]
         self._snow: list[list[float]] = []  # [x, y, radius, speed, sway_phase]
+        self._splashes: list[list[float]] = []  # [x, life]
         self._fog_alpha = 0
         self._mode = "none"
 
@@ -76,13 +78,20 @@ class PrecipitationLayer:
                 drop[1] += drop[3] * dt
                 drop[0] += drop[3] * self._rain_slant * dt
                 if drop[1] > h:
+                    self._splashes.append([drop[0], SPLASH_LIFE])
                     drop[1] = -drop[2]
                     drop[0] = random.uniform(0, w)
                 if drop[0] > w:
                     drop[0] -= w
                 elif drop[0] < 0:
                     drop[0] += w
-        elif self._mode == "snow":
+
+        if self._splashes:
+            for splash in self._splashes:
+                splash[1] -= dt
+            self._splashes = [s for s in self._splashes if s[1] > 0]
+
+        if self._mode == "snow":
             for flake in self._snow:
                 flake[1] += flake[3] * dt
                 flake[4] += dt * 1.4
@@ -102,6 +111,13 @@ class PrecipitationLayer:
                     (x + dx, y + length),
                     1,
                 )
+            h = self.size[1]
+            for x, life in self._splashes:
+                t = life / SPLASH_LIFE  # 1 -> 0 as it fades
+                spread = round(2 + 4 * (1 - t))
+                y = h - 1
+                pygame.draw.line(target, palette.RAIN_STREAK, (x - spread, y), (x - spread * 0.4, y - 3), 1)
+                pygame.draw.line(target, palette.RAIN_STREAK, (x + spread, y), (x + spread * 0.4, y - 3), 1)
         elif self._mode == "snow":
             for x, y, radius, *_ in self._snow:
                 pygame.draw.circle(target, palette.SNOW_FLAKE, (round(x), round(y)), round(radius))
