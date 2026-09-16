@@ -40,8 +40,7 @@ def draw_header(target: pygame.Surface, snapshot: WeatherSnapshot, now: datetime
 
 
 def draw_primary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Config) -> pygame.Rect:
-    """Draws the big temperature + condition label. Returns the bounding
-    rect used, so secondary info can be positioned relative to it."""
+    """Draw the primary temperature and return its bounds."""
     w, h = target.get_size()
     margin = round(w * MARGIN)
     current = snapshot.current
@@ -63,12 +62,12 @@ def draw_primary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Conf
     unit_x = margin + temp_surf.get_width() - round(h * 0.05)
     target.blit(unit_surf, (unit_x, temp_y + round(h * 0.03)))
 
-    cond_font = ty.body_font(round(h * 0.05))
-    cond_surf = ty.render(cond_font, current.condition.label.upper(), palette.TEXT_ACCENT)
-    cond_y = temp_y + temp_surf.get_height() - round(h * 0.01)
-    target.blit(cond_surf, (margin, cond_y))
-
-    return pygame.Rect(margin, temp_y, temp_surf.get_width() + unit_surf.get_width(), cond_y + cond_surf.get_height() - temp_y)
+    return pygame.Rect(
+        margin,
+        temp_y,
+        temp_surf.get_width() + unit_surf.get_width(),
+        temp_surf.get_height(),
+    )
 
 
 def draw_secondary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Config, anchor: pygame.Rect) -> None:
@@ -80,6 +79,7 @@ def draw_secondary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Co
     value_font = ty.body_font(round(h * 0.036))
 
     rows = [
+        ("CONDITIONS", current.condition.label),
         ("FEELS LIKE", fmt.temperature(current.feels_like, config.units)),
         ("WIND", f"{fmt.wind_compass(current.wind_direction_deg)} {fmt.wind(current.wind_speed, config.units)}"),
         ("HUMIDITY", f"{round(current.humidity)}%"),
@@ -90,7 +90,7 @@ def draw_secondary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Co
             f"{round(current.precipitation_probability)}% · {fmt.precipitation(current.precipitation, config.units)}",
         ))
 
-    row_h = round(h * 0.085)
+    row_h = round(h * 0.1)
     x = w - margin
     y = anchor.top
     for label, value in rows:
