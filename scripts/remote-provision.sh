@@ -19,7 +19,7 @@ ssh "$REMOTE_HOST" "
 "
 
 echo "==> Running device setup on $REMOTE_HOST ..."
-ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && ./scripts/pi-setup.sh"
+ssh -t "$REMOTE_HOST" "cd '$REMOTE_DIR' && SKIP_SETUP_NEXT_STEPS=1 ./scripts/pi-setup.sh"
 
 if [ -f config.toml ]; then
   echo "==> Copying local config.toml to $REMOTE_HOST:$REMOTE_DIR/config.toml ..."
@@ -35,18 +35,21 @@ EOF
 
 if [ ! -f config.toml ]; then
   cat <<EOF
-  1. Set the location on the remote device (no local config.toml was
-     found to push automatically):
-       ssh $REMOTE_HOST "\$EDITOR $REMOTE_DIR/config.toml"
+  Set the location on the remote device (no local config.toml was found
+  to push automatically):
+    ssh $REMOTE_HOST "\$EDITOR $REMOTE_DIR/config.toml"
+
 EOF
 fi
 
 cat <<EOF
-  2. Reboot the remote device once for video/render/input group
-     membership to take effect:
-       ssh $REMOTE_HOST sudo reboot
-  3. Run it remotely to test on the attached display:
-       mise run remote:run
-  4. Once it looks right, install it as a service:
-       mise run remote:install-service
+  Reboot the remote device once for video/render/input group membership
+  to take effect:
+    ssh $REMOTE_HOST sudo reboot
+
+  Run it remotely to test on the attached display:
+    mise run remote:run
+
+  Once it looks right, install it as a service:
+    mise run remote:install-service
 EOF

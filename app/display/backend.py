@@ -108,7 +108,7 @@ def init_display(config: DisplayConfig) -> Display:
             f"Could not initialize any SDL video backend (requested={requested!r})"
         )
 
-    pygame.mouse.set_visible(backend_name == "window")
+    pygame.mouse.set_visible(backend_name == "window" and not _linux_headless())
     pygame.display.set_caption("home-dashboard")
 
     canvas = pygame.Surface((config.width, config.height)).convert()

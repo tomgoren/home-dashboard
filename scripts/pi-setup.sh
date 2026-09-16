@@ -39,6 +39,7 @@ mise run setup
 echo "==> Creating config.toml if it doesn't exist yet..."
 mise run config
 
+if [ "${SKIP_SETUP_NEXT_STEPS:-0}" != "1" ]; then
 cat <<EOF
 
 ==> Setup complete.
@@ -58,3 +59,4 @@ Next steps:
      reboots:
        ./scripts/install-service.sh
 EOF
+fi
