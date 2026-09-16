@@ -9,7 +9,7 @@ dataclasses + an enum rather than a Rust-style closed type hierarchy.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 
 
@@ -164,3 +164,11 @@ class WeatherSnapshot:
     location_name: str
     fetched_at: datetime
     stale: bool = False
+    utc_offset_seconds: int = 0
+
+    def local_now(self) -> datetime:
+        """The configured location's current wall-clock time — deliberately
+        independent of the device's own system timezone, since this
+        appliance is driven entirely by lat/lon, not wherever it boots up
+        with its clock set to (a fresh Pi image often defaults to UTC)."""
+        return datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=self.utc_offset_seconds)

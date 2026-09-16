@@ -109,8 +109,8 @@ class App:
         fps = max(5, self.config.display.fps)
         while self.running:
             dt = self.clock.tick(fps) / 1000.0
-            now = datetime.now()
             snapshot = self.snapshot  # one consistent read for the whole frame
+            now = snapshot.local_now()  # the configured location's time, not the device's
 
             self.process_events()
 

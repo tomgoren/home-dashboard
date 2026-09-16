@@ -68,6 +68,7 @@ def load(path: Path) -> WeatherSnapshot | None:
             location_name=data["location_name"],
             fetched_at=datetime.fromisoformat(data["fetched_at"]),
             stale=True,  # anything loaded from disk is stale until a live fetch succeeds
+            utc_offset_seconds=data.get("utc_offset_seconds", 0),
         )
     except (KeyError, ValueError):
         return None

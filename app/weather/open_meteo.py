@@ -98,8 +98,11 @@ class OpenMeteoProvider:
         resp.raise_for_status()
         data = resp.json()
 
-        now = datetime.now()
+        utc_offset_seconds = data.get("utc_offset_seconds", 0)
         cur = data["current"]
+        # Open-Meteo's own clock for this reading, already resolved to the
+        # location's local timezone (timezone=auto) — not the device's.
+        now = datetime.fromisoformat(cur["time"])
         condition = _normalize_condition(cur["weather_code"], cur.get("cloud_cover"))
 
         precip_probability = 0.0
@@ -148,4 +151,5 @@ class OpenMeteoProvider:
             location_name=self.location.name,
             fetched_at=now,
             stale=False,
+            utc_offset_seconds=utc_offset_seconds,
         )

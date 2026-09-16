@@ -123,9 +123,18 @@ rounded phase — see `_build_moon_disc` in `app/scene/celestial.py`), and
 thunderstorm flashes on a randomized 4.5–11s interval (with an occasional
 quick double-flash) instead of a per-frame dice roll that read as a strobe.
 
+**Phase 6:** confirmed working on real hardware (`kmsdrm` backend, no
+tty-attachment tricks needed — see `scripts/pi-setup.sh` /
+`install-service.sh`). Fixed one real bug found there: the app used to
+call `datetime.now()` directly, which reflects the *device's* system
+timezone rather than the configured location's — showed UTC on a Pi whose
+clock hadn't been set to a local timezone. `WeatherSnapshot.local_now()`
+now derives the location's wall-clock time from Open-Meteo's own
+`utc_offset_seconds` for that lat/lon, independent of the device's OS
+clock/timezone entirely.
+
 Not yet done: wind-shaped rain angle is wired but untested against a wide
-range of real wind data; systemd deploy is a template only, untested on
-real hardware (Phase 6 — DRM/KMS and fbdev both need a real Pi to verify).
+range of real wind data.
 
 ## Running it (dev machine)
 

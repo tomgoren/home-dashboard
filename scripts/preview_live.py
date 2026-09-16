@@ -2,7 +2,6 @@
 
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -28,7 +27,7 @@ display = Display(canvas=canvas, physical_screen=screen, logical_size=canvas.get
 scene = Scene(display.logical_size)
 
 snapshot = OpenMeteoProvider(config.location).fetch()
-now = datetime.now()
+now = snapshot.local_now()  # the location's time, not this machine's
 
 scene.configure(snapshot, now)
 for _ in range(90):
