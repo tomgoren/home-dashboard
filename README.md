@@ -90,7 +90,8 @@ app/
     scrim.py                # soft top/bottom darkening for text legibility
 
 assets/fonts/            # Space Mono (OFL) + VT323 (OFL)
-scripts/                  # headless preview renderers (dev-only, no live window needed)
+scripts/                  # setup/deploy automation + headless preview renderers
+.mise.toml                # pins Python (mise auto-creates/activates .venv) + task shortcuts
 ```
 
 No DI container, no event bus, no plugin system — plain objects, a
@@ -126,25 +127,71 @@ Not yet done: wind-shaped rain angle is wired but untested against a wide
 range of real wind data; systemd deploy is a template only, untested on
 real hardware (Phase 6 — DRM/KMS and fbdev both need a real Pi to verify).
 
-## Running it
+## Running it (dev machine)
+
+Python is managed by [mise](https://mise.jdx.dev) — it pins the interpreter
+version (`.mise.toml`) and auto-creates/activates a `.venv` for the
+project, so there's no manual `venv`/`activate` dance.
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp config.example.toml config.toml   # edit location/units as needed
-python -m app.main
+mise install       # fetches the pinned Python + uv
+mise run setup      # uv pip install -r requirements.txt, into .venv
+mise run config      # cp config.example.toml -> config.toml if missing
+```
+
+Edit `config.toml` with your location, then:
+
+```bash
+mise run run
 ```
 
 Controls: `q`/`Esc` quit, `r` force refresh, `d` toggle debug overlay.
 
-On the Pi (no desktop session), `backend = "auto"` in `config.toml` tries
-DRM/KMS first, then legacy `fbdev`. Force one explicitly with `backend =
-"kmsdrm"` or `"fbdev"` if auto-detection picks wrong. See
-`weathr-panel.service.example` for the systemd unit.
+Other tasks (`mise tasks` lists all of them):
 
-`scripts/preview.py` and `scripts/preview_grid.py` render frames to PNG
-without opening a window (`SDL_VIDEODRIVER=dummy`) — useful for checking
-composition changes over SSH or in CI.
+```bash
+mise run preview          # headless PNG of the rainy mockup, no window needed
+mise run preview-grid       # PNGs across several conditions/times of day
+mise run preview-live         # headless PNG using real Open-Meteo data
+mise run check-display          # what DRM/KMS or framebuffer devices exist
+```
+
+## Deploying to a Raspberry Pi (or similar headless Linux device)
+
+```bash
+git clone https://github.com/tomgoren/weathr-panel.git
+cd weathr-panel
+./scripts/pi-setup.sh
+```
+
+`pi-setup.sh` installs the SDL2/DRM system packages, adds your user to the
+`video`/`render`/`input` groups (needed for DRM/KMS access without a
+desktop session), installs `mise` if it isn't already, and runs the same
+`mise run setup` + `mise run config` as above. It prints next steps when
+done — reboot once for the group change to take effect, edit
+`config.toml`, then run it from the Pi's local console (not a headless SSH
+session with no monitor attached — SDL needs to open the real display
+device):
+
+```bash
+mise run run
+```
+
+`backend = "auto"` in `config.toml` tries DRM/KMS first, then legacy
+`fbdev`; `mise run check-display` shows what's actually available on the
+device if you need to force one explicitly (`backend = "kmsdrm"` or
+`"fbdev"`).
+
+Once it looks right on screen, install it as a systemd service so it
+survives reboots:
+
+```bash
+./scripts/install-service.sh
+```
+
+This generates the unit file from your actual user/project path (no manual
+editing needed) and enables + starts it. Check on it with
+`sudo systemctl status weathr-panel` or `journalctl -u weathr-panel -f`.
 
 ## Credits
 

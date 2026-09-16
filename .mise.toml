@@ -1,0 +1,47 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+# Auto-creates and activates a venv at .venv whenever this directory is
+# entered (with `mise activate` in your shell) or a `mise run`/`mise x`
+# task executes — same .venv path the systemd unit and old manual
+# instructions already expected, so nothing else has to change.
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.setup]
+description = "Install project dependencies into the mise-managed venv"
+# mise creates the venv with `uv`, and uv-created venvs ship without pip —
+# use `uv pip` (not plain `pip`) or installs silently land in the wrong
+# interpreter instead of ./.venv.
+run = "uv pip install -r requirements.txt"
+
+[tasks.config]
+description = "Create config.toml from the example if it doesn't exist yet"
+run = "test -f config.toml || cp config.example.toml config.toml"
+
+[tasks.run]
+description = "Run the weather panel app"
+depends = ["config"]
+run = "python -m app.main"
+
+[tasks.preview]
+description = "Render one headless preview PNG (rainy scene, fake data)"
+run = "python scripts/preview.py"
+
+[tasks.preview-grid]
+description = "Render headless preview PNGs across several conditions/times"
+run = "python scripts/preview_grid.py"
+
+[tasks.preview-live]
+description = "Render one headless preview PNG using real weather data"
+depends = ["config"]
+run = "python scripts/preview_live.py"
+
+[tasks.check-display]
+description = "Show what DRM/KMS and framebuffer devices are available"
+run = """
+echo '--- /dev/dri (KMS) ---'; ls -la /dev/dri/ 2>/dev/null || echo '(none)'
+echo '--- /dev/fb* (legacy framebuffer) ---'; ls -la /dev/fb* 2>/dev/null || echo '(none)'
+echo '--- groups ---'; groups
+"""
