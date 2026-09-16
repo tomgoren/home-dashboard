@@ -182,6 +182,51 @@ mise run run
 device if you need to force one explicitly (`backend = "kmsdrm"` or
 `"fbdev"`).
 
+### Testing over headless SSH (no monitor, or no one in front of it)
+
+There are two different "headless" situations, and they need different
+tricks:
+
+**No display hardware attached at all yet.** You can't see anything
+regardless of tooling, but you can still exercise all the real
+scene/UI/weather code — `mise run preview`, `preview-grid`, and
+`preview-live` render to PNG using SDL's `dummy` driver, no display
+device required. Pull the file back with `scp` (or `sz`) to actually look
+at it:
+
+```bash
+mise run preview-live
+scp pi@<host>:~/weathr-panel/preview_live.png .
+```
+
+This doesn't exercise the real `display/backend.py` DRM/KMS/fbdev path
+(the preview scripts intentionally bypass it), so it verifies composition
+and data flow, not "does the physical panel actually light up."
+
+**A screen is attached and the app is running on it, but you're only on
+SSH** (e.g. it's mounted somewhere you can't currently look at, or
+running as the systemd service). `app/main.py` installs a `SIGUSR1`
+handler that dumps exactly what's currently on the physical display to a
+timestamped PNG in the working directory:
+
+```bash
+kill -USR1 $(pgrep -f "app.main")
+ls debug_screenshot_*.png   # find the new one
+scp pi@<host>:~/weathr-panel/debug_screenshot_*.png .
+```
+
+Under systemd, `pgrep -f "app.main"` or `systemctl show --property MainPID
+--value weathr-panel` both find the right PID. Note this only works
+against the real process directly (or under systemd) — `mise run run`
+wraps the process and swallows the signal instead of forwarding it, so
+use the direct form (`.venv/bin/python -m app.main &`) if you want to test
+this without installing the service first.
+
+Either way, check `[display] backend=...` in the startup log
+(`journalctl -u weathr-panel` or plain stdout) to confirm which backend
+actually got picked — `auto` can silently fall back further than expected
+if `kmsdrm` init fails.
+
 Once it looks right on screen, install it as a systemd service so it
 survives reboots:
 

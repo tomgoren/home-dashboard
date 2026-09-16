@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import signal
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -57,9 +58,25 @@ class App:
         )
         self.refresher.start()
 
+        # No monitor and only SSH access? `kill -USR1 <pid>` dumps exactly
+        # what's currently on the physical display to a PNG you can scp
+        # off the device — the only way to "see" a real kmsdrm/fbdev run
+        # without a screen in front of you.
+        self._screenshot_requested = False
+        if hasattr(signal, "SIGUSR1"):
+            signal.signal(signal.SIGUSR1, lambda signum, frame: setattr(self, "_screenshot_requested", True))
+
     @property
     def snapshot(self) -> WeatherSnapshot:
         return self.refresher.snapshot
+
+    def maybe_dump_screenshot(self) -> None:
+        if not self._screenshot_requested:
+            return
+        self._screenshot_requested = False
+        path = Path.cwd() / f"debug_screenshot_{datetime.now():%Y%m%d_%H%M%S}.png"
+        pygame.image.save(self.display.physical_screen, str(path))
+        print(f"[debug] screenshot saved to {path}", flush=True)
 
     def process_events(self) -> None:
         for event in pygame.event.get():
@@ -120,6 +137,7 @@ class App:
                 self.draw_debug()
 
             self.display.present()
+            self.maybe_dump_screenshot()
 
         self.refresher.stop()
         pygame.quit()

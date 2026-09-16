@@ -113,6 +113,14 @@ def init_display(config: DisplayConfig) -> Display:
 
     canvas = pygame.Surface((config.width, config.height)).convert()
 
+    # Only visible feedback available over a headless SSH session — always
+    # print it, don't gate behind debug config.
+    print(
+        f"[display] backend={backend_name} "
+        f"physical={screen.get_size()} logical=({config.width}, {config.height})",
+        flush=True,
+    )
+
     return Display(
         canvas=canvas,
         physical_screen=screen,
