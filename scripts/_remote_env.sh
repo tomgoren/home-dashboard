@@ -7,5 +7,5 @@ fi
 source .remote.env
 
 : "${REMOTE_HOST:?REMOTE_HOST must be set in .remote.env, e.g. pi@10.0.0.37}"
-: "${REMOTE_DIR:=~/home-dashboard}"
+: "${REMOTE_DIR:=home-dashboard}"
 : "${REPO_URL:=https://github.com/tomgoren/home-dashboard.git}"
