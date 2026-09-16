@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs and starts weathr-panel as a systemd service using the current
+# Installs and starts home-dashboard as a systemd service using the current
 # user and the mise-managed venv already set up by pi-setup.sh.
 #
 # Usage: ./scripts/install-service.sh
@@ -8,7 +8,7 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_USER="$(whoami)"
 VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
-SERVICE_FILE=/etc/systemd/system/weathr-panel.service
+SERVICE_FILE=/etc/systemd/system/home-dashboard.service
 
 if [ ! -x "$VENV_PYTHON" ]; then
   echo "error: $VENV_PYTHON not found." >&2
@@ -19,7 +19,7 @@ fi
 echo "==> Writing $SERVICE_FILE ..."
 sudo tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
-Description=weathr-panel weather appliance
+Description=home-dashboard weather appliance
 After=network-online.target
 Wants=network-online.target
 
@@ -39,13 +39,13 @@ EOF
 
 echo "==> Enabling and starting the service..."
 sudo systemctl daemon-reload
-sudo systemctl enable --now weathr-panel
+sudo systemctl enable --now home-dashboard
 
 cat <<EOF
 
 ==> Installed and started.
 
-  Status: sudo systemctl status weathr-panel
-  Logs:   journalctl -u weathr-panel -f
-  Stop:   sudo systemctl stop weathr-panel
+  Status: sudo systemctl status home-dashboard
+  Logs:   journalctl -u home-dashboard -f
+  Stop:   sudo systemctl stop home-dashboard
 EOF

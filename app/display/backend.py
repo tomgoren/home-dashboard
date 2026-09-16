@@ -109,7 +109,7 @@ def init_display(config: DisplayConfig) -> Display:
         )
 
     pygame.mouse.set_visible(backend_name == "window")
-    pygame.display.set_caption("weathr-panel")
+    pygame.display.set_caption("home-dashboard")
 
     canvas = pygame.Surface((config.width, config.height)).convert()
 

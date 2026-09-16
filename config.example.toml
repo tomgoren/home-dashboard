@@ -23,7 +23,7 @@ fps = 30
 
 [weather]
 refresh_interval_seconds = 600
-cache_path = "~/.cache/weathr-panel/last_weather.json"
+cache_path = "~/.cache/home-dashboard/last_weather.json"
 
 [debug]
 enabled = false

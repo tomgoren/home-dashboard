@@ -21,7 +21,7 @@ description = "Create config.toml from the example if it doesn't exist yet"
 run = "test -f config.toml || cp config.example.toml config.toml"
 
 [tasks.run]
-description = "Run the weather panel app"
+description = "Run the app"
 depends = ["config"]
 run = "python -m app.main"
 
@@ -45,3 +45,37 @@ echo '--- /dev/dri (KMS) ---'; ls -la /dev/dri/ 2>/dev/null || echo '(none)'
 echo '--- /dev/fb* (legacy framebuffer) ---'; ls -la /dev/fb* 2>/dev/null || echo '(none)'
 echo '--- groups ---'; groups
 """
+
+# --- device:* — run these while logged into the target device itself ---
+
+[tasks."device:setup"]
+description = "First-time bootstrap on this device: system packages, groups, mise, deps"
+run = "./scripts/pi-setup.sh"
+
+[tasks."device:install-service"]
+description = "Install and start the systemd service on this device"
+run = "./scripts/install-service.sh"
+
+# --- remote:* — run these from your own machine, targeting a headless
+# device over SSH (configure the target in .remote.env — see
+# .remote.env.example) ---
+
+[tasks."remote:provision"]
+description = "Provision a fresh headless device over SSH: clone + device:setup, no login required"
+run = "./scripts/remote-provision.sh"
+
+[tasks."remote:install-service"]
+description = "Install and start the systemd service on the remote device, over SSH"
+run = "./scripts/remote-install-service.sh"
+
+[tasks."remote:deploy"]
+description = "Pull latest code + reinstall deps + restart the service on an already-provisioned remote device"
+run = "./scripts/remote-deploy.sh"
+
+[tasks."remote:run"]
+description = "Run the app in the foreground on the remote device's display, over SSH (for testing)"
+run = "./scripts/remote-run.sh"
+
+[tasks."remote:logs"]
+description = "Tail the remote device's service logs over SSH"
+run = "./scripts/remote-logs.sh"

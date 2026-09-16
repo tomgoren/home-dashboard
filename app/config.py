@@ -35,7 +35,7 @@ class DisplayConfig:
 @dataclass
 class WeatherConfig:
     refresh_interval_seconds: int = 600
-    cache_path: str = "~/.cache/weathr-panel/last_weather.json"
+    cache_path: str = "~/.cache/home-dashboard/last_weather.json"
 
 
 @dataclass

@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 config.toml
+.remote.env
 *.png
 !docs/**/*.png
 .DS_Store
