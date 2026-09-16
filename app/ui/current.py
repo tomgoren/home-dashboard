@@ -45,7 +45,7 @@ def draw_primary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Conf
     margin = round(w * MARGIN)
     current = snapshot.current
 
-    temp_font = ty.display_font(round(h * 0.34))
+    temp_font = ty.display_font(round(h * 0.32))
     temp_str = fmt.temperature(current.temperature, config.units, with_unit=False)
     temp_surf = ty.render(temp_font, temp_str, palette.TEXT_PRIMARY)
     temp_y = round(h * 0.24)
