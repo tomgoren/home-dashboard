@@ -66,6 +66,7 @@ class SkyLayer:
 
         self.is_day = astronomy.is_day(now)
         self.coverage = coverage
+        self.horizon_color = horizon
 
     def _render(self, top: palette.Color, horizon: palette.Color) -> None:
         w, h = self.size

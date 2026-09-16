@@ -43,7 +43,6 @@ class App:
         self.clock = pygame.time.Clock()
         self.debug = config.debug.enabled
         self.running = True
-        self._last_condition = None
 
         bootstrap = weather_cache.load(config.cache_path)
         if bootstrap is None:
@@ -114,15 +113,12 @@ class App:
 
             self.process_events()
 
-            if snapshot.current.condition != self._last_condition:
-                self.scene.configure(snapshot, now)
-                self._last_condition = snapshot.current.condition
-            else:
-                # keep sky/celestial time-driven state fresh even when the
-                # condition hasn't changed
-                self.scene.sky.configure(now, snapshot.astronomy, snapshot.current.condition)
-                self.scene.celestial.configure(now, snapshot.astronomy, snapshot.current.condition.cloud_coverage)
-
+            # Every layer's configure() is cheap when nothing has actually
+            # changed (sky/celestial/horizon are time-driven and need this
+            # every frame regardless; clouds/precipitation/effects guard
+            # their own expensive rebuilds behind a condition-equality
+            # check internally), so there's no need to gate this call.
+            self.scene.configure(snapshot, now)
             self.scene.update(dt)
 
             canvas = self.display.canvas

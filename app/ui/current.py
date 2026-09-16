@@ -52,8 +52,11 @@ def draw_primary(target: pygame.Surface, snapshot: WeatherSnapshot, config: Conf
     temp_y = round(h * 0.24)
     target.blit(temp_surf, (margin, temp_y))
 
+    # Just the letter, not another "°" — temp_str above already has one
+    # baked in (with_unit=False still yields a bare degree glyph), so a
+    # second "°F"/"°C" here would double up right next to it.
     unit_font = ty.body_font(round(h * 0.065))
-    unit_str = "°F" if config.units.temperature == "fahrenheit" else "°C"
+    unit_str = "F" if config.units.temperature == "fahrenheit" else "C"
     unit_surf = ty.render(unit_font, unit_str, palette.TEXT_SECONDARY)
     # Space Mono's monospace advance bakes in trailing side-bearing after
     # the last digit, so pull the unit in rather than butting it flush.

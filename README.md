@@ -78,8 +78,9 @@ app/
     sky.py               # gradient, interpolated across night/dawn/day/dusk
     celestial.py          # sun/moon arc position, twinkling stars
     clouds.py             # parallax cloud clusters, wind-driven drift
+    horizon.py             # mountain/treeline/river silhouette, tinted from the sky's own color
     precipitation.py      # rain / snow / fog, intensity-driven
-    effects.py            # lightning flash (more flourishes go here later)
+    effects.py            # lightning flashes + bird flocks (more flourishes go here later)
 
   ui/
     typography.py        # font loading + cached text rendering
@@ -132,6 +133,16 @@ clock hadn't been set to a local timezone. `WeatherSnapshot.local_now()`
 now derives the location's wall-clock time from Open-Meteo's own
 `utc_offset_seconds` for that lat/lon, independent of the device's OS
 clock/timezone entirely.
+
+**Landscape and life:** a stylized Pacific Northwest horizon
+(`app/scene/horizon.py`) — a snow-capped peak, forested foothills, and a
+meandering river visible through the valley gap — sits between the sky and
+the forecast strip. It's static geometry (mountains don't move) but tinted
+each frame from the sky's own current horizon color, so it stays coherent
+through every time-of-day and weather blend without its own palette
+logic. Small bird flocks (`EffectsLayer`) drift across during calm
+daylight (clear/partly-cloudy/cloudy, not storming, not night) — a nod to
+weathr's own `birds`/`airplanes` animation modules.
 
 Not yet done: wind-shaped rain angle is wired but untested against a wide
 range of real wind data.

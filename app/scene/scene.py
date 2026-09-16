@@ -12,6 +12,7 @@ import pygame
 from app.scene.celestial import CelestialLayer
 from app.scene.clouds import CloudLayer
 from app.scene.effects import EffectsLayer
+from app.scene.horizon import HorizonLayer
 from app.scene.precipitation import PrecipitationLayer
 from app.scene.sky import SkyLayer
 from app.weather.model import WeatherSnapshot
@@ -23,6 +24,7 @@ class Scene:
         self.sky = SkyLayer(size)
         self.celestial = CelestialLayer(size)
         self.clouds = CloudLayer(size)
+        self.horizon = HorizonLayer(size)
         self.precipitation = PrecipitationLayer(size)
         self.effects = EffectsLayer(size)
 
@@ -33,14 +35,16 @@ class Scene:
         self.clouds.configure(
             condition, snapshot.current.wind_speed, snapshot.current.wind_direction_deg
         )
+        self.horizon.configure(self.sky.horizon_color)
         self.precipitation.configure(
             condition, snapshot.current.wind_speed, snapshot.current.wind_direction_deg
         )
-        self.effects.configure(condition)
+        self.effects.configure(condition, self.sky.is_day)
 
     def update(self, dt: float) -> None:
         self.celestial.update(dt)
         self.clouds.update(dt)
+        self.horizon.update(dt)
         self.precipitation.update(dt)
         self.effects.update(dt)
 
@@ -48,5 +52,6 @@ class Scene:
         self.sky.draw(target)
         self.celestial.draw(target)
         self.clouds.draw(target)
+        self.horizon.draw(target)
         self.precipitation.draw(target)
         self.effects.draw(target)
